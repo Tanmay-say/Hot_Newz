@@ -1,0 +1,192 @@
+classDiagram
+    class User {
+        +string user_id
+        +string phone_number
+        +string preferred_channel
+        +List~string~ topics_of_interest
+        +Dictionary preferred_sources
+        +NotificationFrequency frequency
+        +NotificationSettings notification_settings
+        +boolean active_subscription
+        +SubscriptionTier tier
+        +DateTime last_activity
+        +__init__(phone_number, channel)
+        +update_preferences(preferences)
+        +toggle_subscription(active)
+        +record_interaction(interaction_type, content_id)
+    }
+    
+    class NotificationSettings {
+        +TimeRange quiet_hours
+        +int max_daily_notifications
+        +List~string~ blocked_keywords
+        +Dictionary language_preferences
+        +boolean include_images
+        +__init__(default_settings)
+        +update_settings(settings)
+        +is_notification_allowed(time)
+    }
+    
+    class NewsArticle {
+        +string article_id
+        +string title
+        +string content
+        +string summary
+        +string source_name
+        +string source_url
+        +DateTime published_date
+        +List~string~ topics
+        +List~string~ keywords
+        +float relevance_score
+        +string image_url
+        +__init__(source_data)
+        +generate_summary()
+        +extract_keywords()
+        +calculate_relevance_score()
+    }
+    
+    class NewsCollector {
+        +List~NewsSource~ sources
+        +Dictionary api_keys
+        +Dictionary rate_limits
+        +__init__(sources_config)
+        +collect_news()
+        +add_source(source_config)
+        +remove_source(source_id)
+        +check_source_health()
+    }
+    
+    class NewsSource {
+        +string source_id
+        +string name
+        +string base_url
+        +SourceType type
+        +int polling_frequency
+        +Dictionary credentials
+        +__init__(config)
+        +fetch_articles()
+        +parse_response(response)
+        +validate_article(article)
+    }
+    
+    class ContentProcessor {
+        +NLPEngine nlp_engine
+        +DuplicateDetector duplicate_detector
+        +TopicClassifier topic_classifier
+        +__init__()
+        +process_article(article)
+        +summarize_content(content)
+        +classify_topics(content)
+        +detect_duplicates(article)
+        +score_relevance(article, user_preferences)
+    }
+    
+    class DeliveryManager {
+        +Dictionary channel_handlers
+        +RateLimiter rate_limiter
+        +MessageFormatter formatter
+        +ScheduleOptimizer scheduler
+        +__init__()
+        +send_notification(user, article)
+        +format_for_channel(article, channel)
+        +handle_delivery_failure(user, article, error)
+        +optimize_delivery_time(user)
+        +track_delivery_status(message_id)
+    }
+    
+    class WhatsAppHandler {
+        +WhatsAppClient client
+        +Dictionary message_templates
+        +Dictionary delivery_statuses
+        +__init__(credentials)
+        +send_message(user, content)
+        +create_interactive_message(content)
+        +process_user_reply(user_id, message)
+        +check_message_status(message_id)
+    }
+    
+    class SMSHandler {
+        +SMSClient client
+        +int character_limit
+        +Dictionary delivery_statuses
+        +__init__(credentials)
+        +send_message(user, content)
+        +truncate_content(content)
+        +create_shortened_urls(urls)
+        +check_message_status(message_id)
+    }
+    
+    class UserManager {
+        +UserRepository repository
+        +AuthService auth_service
+        +PreferenceEngine preference_engine
+        +__init__()
+        +create_user(phone_number, channel)
+        +get_user(user_id)
+        +update_user_preferences(user_id, preferences)
+        +process_command(user_id, command)
+        +handle_subscription_change(user_id, status)
+        +analyze_user_behavior(user_id)
+    }
+    
+    class NewsDatabase {
+        +Connection db_connection
+        +SearchIndex search_index
+        +CacheManager cache
+        +__init__(connection_params)
+        +store_article(article)
+        +get_article(article_id)
+        +search_articles(query)
+        +mark_as_sent(article_id, user_id)
+        +get_articles_by_topic(topic)
+        +cleanup_old_articles(days)
+    }
+    
+    class AnalyticsService {
+        +EventTracker event_tracker
+        +UserAnalytics user_analytics
+        +ContentAnalytics content_analytics
+        +Dashboard dashboard
+        +__init__()
+        +track_event(event_type, data)
+        +generate_user_insights(user_id)
+        +generate_content_insights(time_period)
+        +track_delivery_performance()
+        +export_report(report_type, parameters)
+    }
+    
+    class CommandProcessor {
+        +Dictionary command_handlers
+        +ResponseTemplates templates
+        +__init__()
+        +process_command(user, command_text)
+        +generate_help_message(user)
+        +handle_settings_change(user, settings)
+        +parse_command_arguments(command_text)
+    }
+    
+    class WebPortal {
+        +AuthenticationService auth_service
+        +UserPreferenceForm preference_form
+        +NewsHistoryViewer history_viewer
+        +AccountManager account_manager
+        +__init__()
+        +authenticate_user(credentials)
+        +display_dashboard(user_id)
+        +update_user_settings(user_id, settings)
+        +view_news_history(user_id, filters)
+        +manage_subscription(user_id, action)
+    }
+    
+    User "1" -- "1" NotificationSettings : has
+    NewsCollector "1" -- "*" NewsSource : manages
+    ContentProcessor -- NewsArticle : processes
+    DeliveryManager "1" -- "*" WhatsAppHandler : uses
+    DeliveryManager "1" -- "*" SMSHandler : uses
+    UserManager -- User : manages
+    NewsDatabase -- NewsArticle : stores
+    CommandProcessor -- User : processes commands for
+    AnalyticsService -- User : analyzes
+    AnalyticsService -- NewsArticle : analyzes
+    WebPortal -- User : serves
+    DeliveryManager -- User : delivers to

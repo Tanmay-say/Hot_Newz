@@ -1,0 +1,100 @@
+sequenceDiagram
+    participant User
+    participant WA as WhatsAppHandler
+    participant SMS as SMSHandler
+    participant CP as CommandProcessor
+    participant UM as UserManager
+    participant DM as DeliveryManager
+    participant NC as NewsCollector
+    participant CoP as ContentProcessor
+    participant ND as NewsDatabase
+    participant AS as AnalyticsService
+    
+    %% User Registration Flow
+    User->>WA: Send subscribe message
+    WA->>CP: process_command(user, text)
+    CP->>UM: create_user(phone, "whatsapp")
+    UM->>UM: initialize preferences
+    UM-->>WA: Send welcome message
+    WA-->>User: Display topics selection
+    User->>WA: Select topics
+    WA->>CP: process_command(user, selection)
+    CP->>UM: update_user_preferences(user_id, topics)
+    UM-->>WA: Confirmation message
+    WA-->>User: Display frequency options
+    User->>WA: Select frequency
+    WA->>CP: process_command(user, frequency)
+    CP->>UM: update_user_preferences(user_id, frequency)
+    UM-->>WA: Setup complete message
+    WA-->>User: Subscription confirmed
+    
+    %% News Collection Flow
+    loop Scheduled Collection
+        NC->>NC: collect_news()
+        loop Each Source
+            NC->>NewsSource: fetch_articles()
+            NewsSource-->>NC: raw_articles
+            NC->>CoP: process_article(raw_article)
+            CoP->>CoP: summarize_content()
+            CoP->>CoP: classify_topics()
+            CoP->>CoP: detect_duplicates()
+            CoP->>ND: store_article(processed_article)
+        end
+    end
+    
+    %% News Delivery Flow
+    loop Scheduled Delivery
+        DM->>UM: get_users_for_delivery(time)
+        UM-->>DM: eligible_users
+        loop Each User
+            DM->>ND: search_articles(user.preferences)
+            ND-->>DM: relevant_articles
+            DM->>DM: score_relevance(articles, user)
+            DM->>DM: select_articles(scored_articles)
+            DM->>DM: optimize_delivery_time(user)
+            alt WhatsApp User
+                DM->>WA: send_message(user, articles)
+                WA->>WA: format_for_channel(articles)
+                WA-->>User: Send news notification
+                WA->>DM: delivery_status
+            else SMS User
+                DM->>SMS: send_message(user, articles)
+                SMS->>SMS: truncate_content(articles)
+                SMS->>SMS: create_shortened_urls()
+                SMS-->>User: Send news notification
+                SMS->>DM: delivery_status
+            end
+            DM->>ND: mark_as_sent(article_ids, user_id)
+            DM->>AS: track_event("delivery", data)
+        end
+    end
+    
+    %% User Interaction Flow
+    User->>WA: Send command ("pause")
+    WA->>CP: process_command(user, "pause")
+    CP->>CP: parse_command_arguments("pause")
+    CP->>UM: handle_subscription_change(user_id, "paused")
+    UM-->>CP: status_updated
+    CP-->>WA: response_message
+    WA-->>User: Confirmation message
+    
+    %% User Preference Update Flow
+    User->>WA: Request settings change
+    WA->>CP: process_command(user, "settings")
+    CP-->>WA: settings_options_message
+    WA-->>User: Display settings options
+    User->>WA: Select setting to change
+    WA->>CP: process_command(user, selection)
+    CP->>UM: update_user_preferences(user_id, new_setting)
+    UM-->>CP: preferences_updated
+    CP-->>WA: confirmation_message
+    WA-->>User: Settings updated confirmation
+    
+    %% Analytics Flow
+    AS->>ND: get_articles_by_period(time_range)
+    ND-->>AS: period_articles
+    AS->>UM: get_users_by_activity(time_range)
+    UM-->>AS: active_users
+    AS->>AS: generate_content_insights(period_articles)
+    AS->>AS: generate_user_insights(active_users)
+    AS->>AS: track_delivery_performance()
